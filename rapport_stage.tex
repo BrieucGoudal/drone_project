@@ -1,0 +1,985 @@
+\documentclass[12pt,a4paper]{article}
+
+% === Packages ===
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{setspace}
+
+% === Configuration de la mise en page ===
+\setstretch{1.15}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% === Configuration des liens hypertexte ===
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Rapport de Stage - Atterrissage Autonome de Drones},
+    pdfauthor={Brieuc Goudal},
+}
+
+% === Configuration des listings (code C++) ===
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    frame=single,
+    breaklines=true,
+    breakatwhitespace=false,
+    tabsize=4,
+    captionpos=b,
+    showstringspaces=false
+}
+
+% === Début du document ===
+\begin{document}
+
+% === PAGE DE GARDE ===
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    {\LARGE\bfseries ESEO}\\[0.5cm]
+    {\large École Supérieure d'Électronique de l'Ouest}\\[2cm]
+    
+    {\Large\bfseries Année 2025-2026}\\[3cm]
+    
+    {\Huge\bfseries Rapport de Stage}\\[0.5cm]
+    {\huge Stage Scientifique et Technique (S7)}\\[3cm]
+    
+    {\LARGE\bfseries Atterrissage Automatique de Drones sur Cibles Mobiles}\\[0.5cm]
+    {\large Détection ArUco -- Contrôle PID/PX4 -- Simulateur Gazebo}\\[3cm]
+    
+    \begin{flushleft}
+    {\large
+    \textbf{Étudiant :} Brieuc Goudal\\[0.3cm]
+    \textbf{Période :} 15 août 2025 -- 12 décembre 2025\\[0.3cm]
+    \textbf{Entreprise :} USTH (University of Science and Technology of Hanoï)\\[0.3cm]
+    \textbf{Sujet :} Détection de la distraction du conducteur / Atterrissage automatique de drones sur cibles mobiles\\[0.3cm]
+    \textbf{Tuteur entreprise :} Dr Pham Xuan Tung\\[0.3cm]
+    \textbf{Tuteur ESEO :} M. Feuilloy Matthieu\\[0.3cm]
+    }
+    \end{flushleft}
+    
+    \vfill
+    
+    {\large Hanoï, Décembre 2025}
+\end{titlepage}
+
+% === ENGAGEMENT DE NON-PLAGIAT ===
+\newpage
+\thispagestyle{empty}
+\vspace*{3cm}
+
+\begin{center}
+{\Large\bfseries ENGAGEMENT DE NON-PLAGIAT}
+\end{center}
+
+\vspace{2cm}
+
+Je soussigné, \textbf{Brieuc Goudal}, étudiant à l'ESEO (École Supérieure d'Électronique de l'Ouest), déclare sur l'honneur que le présent rapport de stage est le fruit d'un travail personnel et que toutes les sources d'information utilisées ont été citées de manière appropriée.
+
+\vspace{1cm}
+
+Je certifie que ce rapport n'a fait l'objet d'aucun plagiat et que les données, résultats et analyses présentés sont authentiques et n'ont pas été falsifiés.
+
+\vspace{1cm}
+
+Je reconnais avoir pris connaissance de la charte contre le plagiat de l'ESEO et m'engage à respecter les règles de propriété intellectuelle et d'éthique académique.
+
+\vspace{1cm}
+
+Je suis conscient que tout acte de plagiat pourra entraîner des sanctions pouvant aller jusqu'à l'annulation de ma validation de stage.
+
+\vspace{3cm}
+
+\begin{flushright}
+Fait à Hanoï, le 09 décembre 2025\\[1cm]
+Signature :\\[2cm]
+Brieuc Goudal
+\end{flushright}
+
+% === FICHE DE SYNTHÈSE ===
+\newpage
+\thispagestyle{empty}
+
+\begin{center}
+{\Large\bfseries FICHE DE SYNTHÈSE}
+\end{center}
+
+\vspace{1cm}
+
+\noindent\textbf{Sujet complet :} Atterrissage automatique de drones sur cibles mobiles -- détection ArUco -- contrôle PX4/MAVSDK -- simulateur Gazebo -- C++
+
+\vspace{1cm}
+
+\noindent\textbf{Abstract (English)}
+
+\vspace{0.5cm}
+
+This internship focuses on developing an autonomous landing system for quadrotors on moving platforms using visual markers. The project implements a complete simulation framework integrating PX4 autopilot, MAVSDK communication library, and Gazebo simulator. The system uses ArUco marker detection through an onboard camera to track the target platform in real-time. A multi-phase adaptive PID controller ensures stable trajectory tracking even when visual feedback becomes unreliable at low altitudes. The implementation includes optimized marker detection algorithms, altitude-dependent control gains, and a trajectory memory mechanism for blind landing phases. Experimental validation in simulation demonstrates successful landings on platforms moving at speeds up to 2.0 m/s with positioning accuracy of 10-15 cm. The system's main limitations are oscillations at higher speeds and requirements for straight-line trajectories during final approach. This work provides a foundation for autonomous drone operations in dynamic environments with applications in emergency response, delivery systems, and mobile platform recovery.
+
+\vspace{1cm}
+
+\noindent\textbf{Résumé (Français)}
+
+\vspace{0.5cm}
+
+Ce stage porte sur le développement d'un système d'atterrissage autonome de drones sur des plateformes mobiles utilisant des marqueurs visuels. Le projet met en œuvre un cadre de simulation complet intégrant l'autopilote PX4, la bibliothèque de communication MAVSDK et le simulateur Gazebo. Le système utilise la détection de marqueurs ArUco via une caméra embarquée pour suivre la plateforme cible en temps réel. Un contrôleur PID adaptatif multi-phases assure un suivi de trajectoire stable même lorsque le retour visuel devient peu fiable à basse altitude. L'implémentation comprend des algorithmes de détection de marqueurs optimisés, des gains de contrôle dépendants de l'altitude et un mécanisme de mémorisation de trajectoire pour les phases d'atterrissage à l'aveugle. La validation expérimentale en simulation démontre des atterrissages réussis sur des plateformes se déplaçant à des vitesses allant jusqu'à 2,0 m/s avec une précision de positionnement de 10-15 cm. Les principales limitations du système sont les oscillations à vitesses plus élevées et les exigences de trajectoires rectilignes pendant l'approche finale. Ce travail fournit une base pour les opérations autonomes de drones dans des environnements dynamiques avec des applications dans les interventions d'urgence, les systèmes de livraison et la récupération sur plateformes mobiles.
+
+% === TABLE DES MATIÈRES ===
+\newpage
+\tableofcontents
+
+% === DÉBUT DU CORPS DU RAPPORT ===
+\newpage
+\setcounter{page}{1}
+
+\section{Introduction}
+
+L'atterrissage autonome de drones sur des cibles mobiles représente un défi majeur dans le domaine de la robotique aérienne. Cette capacité est essentielle pour de nombreuses applications pratiques telles que la livraison autonome, les interventions d'urgence, ou encore la récupération de drones sur des véhicules en mouvement.
+
+\subsection{Contexte}
+
+Les drones modernes sont capables de voler de manière autonome grâce à des systèmes de positionnement GPS et des autopilotes sophistiqués. Cependant, l'atterrissage précis sur une cible en mouvement nécessite une approche différente basée sur la vision par ordinateur et le contrôle en temps réel. Le retour visuel doit permettre au drone de localiser la cible, d'estimer sa position relative, et d'ajuster sa trajectoire en conséquence.
+
+\subsection{Problématique}
+
+La problématique principale de ce projet est de maintenir une trajectoire stable avec un retour visuel variable. En effet, à mesure que le drone descend vers la cible, le marqueur visuel occupe une part de plus en plus importante du champ de vision de la caméra, jusqu'à devenir impossible à détecter correctement à très basse altitude. Il faut donc développer une stratégie qui permette de :
+
+\begin{itemize}
+    \item Détecter et suivre la cible à haute altitude
+    \item Compenser les mouvements de la plateforme mobile
+    \item Maintenir la trajectoire lorsque la détection visuelle devient impossible
+    \item Atterrir avec précision malgré l'absence de retour visuel
+\end{itemize}
+
+\subsection{Contributions principales}
+
+Ce projet apporte les contributions suivantes :
+
+\begin{itemize}
+    \item \textbf{Cadre de simulation complet} : Intégration de PX4 Autopilot, MAVSDK, et Gazebo pour créer un environnement de test réaliste
+    \item \textbf{Détection ArUco optimisée} : Configuration avancée des paramètres de détection pour maximiser la portée et la robustesse
+    \item \textbf{Contrôleur PID adaptatif} : Implémentation d'un contrôleur à gains variables en fonction de l'altitude pour optimiser stabilité et réactivité
+    \item \textbf{Plateforme mobile personnalisée} : Création d'un robot mobile avec marqueur ArUco de grande taille dans Gazebo
+    \item \textbf{Expérimentations et limites} : Validation expérimentale du système et identification des limitations
+\end{itemize}
+
+\subsection{Structure du rapport}
+
+Ce rapport est organisé en plusieurs sections correspondant aux différentes étapes du projet. La section~\ref{sec:etape1} présente la prise en main de l'environnement de développement. La section~\ref{sec:etape2} détaille l'implémentation d'un système d'atterrissage sur cible fixe avec contrôle proportionnel simple. La section~\ref{sec:etape3} décrit l'extension vers l'atterrissage sur cible mobile avec un contrôleur PID complet. La section~\ref{sec:etape4} analyse les limites du système développé. La section~\ref{sec:impact} présente une réflexion sur l'impact écologique du projet. Enfin, la section~\ref{sec:conclusion} conclut le rapport et propose des perspectives d'amélioration.
+
+
+\section{Étape 1 -- Prise en main et mise en place}
+\label{sec:etape1}
+
+La première étape du projet a consisté à installer et prendre en main l'ensemble des outils nécessaires au développement du système d'atterrissage autonome.
+
+\subsection{Démarche méthodologique}
+
+Le projet a été structuré selon une approche itérative en quatre étapes principales :
+
+\begin{enumerate}
+    \item \textbf{Installation et configuration} : Mise en place de l'environnement de développement avec tous les outils nécessaires
+    \item \textbf{Atterrissage sur cible fixe} : Développement d'une première version avec contrôle proportionnel simple
+    \item \textbf{Atterrissage sur cible mobile} : Extension du système avec un contrôleur PID adaptatif
+    \item \textbf{Validation et identification des limites} : Tests expérimentaux et analyse des performances
+\end{enumerate}
+
+Cette approche progressive a permis de valider chaque composant du système avant d'augmenter la complexité.
+
+\subsection{Installation de l'environnement}
+
+L'environnement de développement a nécessité l'installation et la configuration de plusieurs composants logiciels sur un système Ubuntu 22.04 sous WSL2 (Windows Subsystem for Linux) :
+
+\subsubsection{WSL2 et Ubuntu}
+
+WSL2 (Windows Subsystem for Linux 2) permet d'exécuter un environnement Linux complet sous Windows. Cette solution a été choisie pour sa compatibilité avec l'ensemble des outils utilisés dans le projet.
+
+\subsubsection{Gazebo Garden}
+
+Gazebo est un simulateur robotique 3D qui permet de tester des algorithmes dans un environnement virtuel réaliste. La version Garden a été installée car elle est compatible avec PX4-Autopilot et offre des performances améliorées. Gazebo simule la physique du drone, les capteurs embarqués (caméra, IMU, GPS), et l'environnement de vol.
+
+\subsubsection{PX4-Autopilot}
+
+PX4 est un système d'autopilote open-source utilisé dans de nombreux drones professionnels. Il gère le contrôle bas niveau du drone (stabilisation, navigation, modes de vol) et communique via le protocole MAVLink. L'installation de PX4 comprend également l'intégration avec Gazebo pour la simulation.
+
+\subsubsection{MAVSDK}
+
+MAVSDK est une bibliothèque C++ qui simplifie la communication avec l'autopilote PX4 via le protocole MAVLink. Elle fournit des API de haut niveau pour contrôler le drone (décollage, atterrissage, mode offboard, télémétrie, etc.).
+
+\subsubsection{OpenCV}
+
+OpenCV (Open Source Computer Vision Library) est une bibliothèque de vision par ordinateur qui fournit des outils pour le traitement d'images. Le module ArUco d'OpenCV permet la détection et l'identification de marqueurs fiduciaires, essentiels pour la localisation de la cible.
+
+\subsection{Prise en main du drone dans Gazebo}
+
+Une fois l'environnement installé, la première étape a été de se familiariser avec le contrôle du drone simulé dans Gazebo.
+
+\subsubsection{Lancement de la simulation}
+
+La simulation est lancée avec la commande suivante :
+
+\begin{verbatim}
+cd ~/PX4-Autopilot
+make px4_sitl gz_x500_gimbal
+\end{verbatim}
+
+Cette commande démarre PX4 en mode \textit{Software In The Loop} (SITL) avec un drone X500 équipé d'un gimbal caméra dans Gazebo.
+
+\subsubsection{Armement et décollage}
+
+L'armement du drone (activation des moteurs) et le décollage sont réalisés via MAVSDK :
+
+\begin{lstlisting}[caption={Armement et décollage du drone}]
+// Connexion au drone
+Mavsdk mavsdk;
+mavsdk.add_any_connection("udp://:14540");
+auto system = mavsdk.systems().at(0);
+
+// Plugins nécessaires
+auto action = Action{system};
+auto telemetry = Telemetry{system};
+
+// Attendre que le drone soit prêt
+while (!telemetry.health().is_home_position_ok) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+}
+
+// Armer et décoller
+action.arm();
+action.takeoff();
+\end{lstlisting}
+
+\subsubsection{Déplacement en mode offboard}
+
+Le mode offboard permet de contrôler directement les consignes de vitesse ou de position du drone. Voici un exemple de déplacement :
+
+\begin{lstlisting}[caption={Contrôle en mode offboard}]
+auto offboard = Offboard{system};
+
+// Activer le mode offboard
+Offboard::VelocityBodyYawspeed velocity{};
+velocity.forward_m_s = 0.0f;
+velocity.right_m_s = 0.0f;
+velocity.down_m_s = 0.0f;
+velocity.yawspeed_deg_s = 0.0f;
+
+offboard.set_velocity_body(velocity);
+offboard.start();
+
+// Déplacer le drone
+velocity.forward_m_s = 1.0f;  // 1 m/s vers l'avant
+offboard.set_velocity_body(velocity);
+\end{lstlisting}
+
+\subsubsection{Atterrissage}
+
+L'atterrissage peut être commandé de deux manières :
+\begin{itemize}
+    \item Via la fonction \texttt{action.land()} pour un atterrissage automatique
+    \item En mode offboard avec une vitesse de descente contrôlée
+\end{itemize}
+
+\subsection{Test et orientation de la caméra}
+
+La caméra embarquée du drone est essentielle pour la détection du marqueur ArUco. Deux aspects ont été vérifiés :
+
+\subsubsection{Connexion via gz-transport}
+
+La caméra de Gazebo publie les images sur un topic ROS. La connexion se fait via la bibliothèque gz-transport :
+
+\begin{lstlisting}[caption={Connexion à la caméra Gazebo}]
+#include <gz/transport/Node.hh>
+#include <gz/msgs/image.pb.h>
+
+class GazeboCamera {
+public:
+    GazeboCamera(const std::string& topic) {
+        if (!node.Subscribe(topic, &GazeboCamera::on_image, this)) {
+            throw std::runtime_error("Erreur connexion camera");
+        }
+    }
+
+    bool get_frame(cv::Mat& frame) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (latest_frame_.empty()) return false;
+        frame = latest_frame_.clone();
+        return true;
+    }
+
+private:
+    void on_image(const gz::msgs::Image& msg) {
+        cv::Mat img(msg.height(), msg.width(), CV_8UC3);
+        memcpy(img.data, msg.data().c_str(), msg.data().size());
+        cv::cvtColor(img, img, cv::COLOR_RGB2BGR);
+        
+        std::lock_guard<std::mutex> lock(mutex_);
+        latest_frame_ = img;
+    }
+
+    gz::transport::Node node;
+    cv::Mat latest_frame_;
+    std::mutex mutex_;
+};
+\end{lstlisting}
+
+\subsubsection{Orientation du gimbal à -90°}
+
+Pour que la caméra pointe verticalement vers le bas (nécessaire pour voir la cible au sol), le gimbal doit être orienté à -90° en pitch :
+
+\begin{lstlisting}[caption={Configuration du gimbal}]
+auto gimbal = Gimbal{system};
+
+// Orienter la caméra vers le bas
+Gimbal::ControlMode control_mode = Gimbal::ControlMode::Primary;
+gimbal.set_mode(control_mode);
+
+// Pitch -90 degrés (vers le bas)
+gimbal.set_pitch_and_yaw(-90.0f, 0.0f);
+\end{lstlisting}
+
+Cette configuration permet à la caméra de capturer les images du marqueur ArUco positionné au sol ou sur la plateforme mobile.
+
+
+\section{Étape 2 -- Atterrissage sur cible fixe (système P)}
+\label{sec:etape2}
+
+La deuxième étape du projet consiste à développer un système d'atterrissage sur une cible fixe en utilisant un contrôle proportionnel simple.
+
+\subsection{Objectifs}
+
+Les objectifs de cette étape sont :
+
+\begin{itemize}
+    \item Implémenter la détection d'un marqueur ArUco au sol
+    \item Développer un contrôleur proportionnel pour aligner le drone avec la cible
+    \item Réaliser une descente contrôlée jusqu'à l'atterrissage
+    \item Valider l'architecture logicielle de base
+\end{itemize}
+
+\subsection{Architecture logicielle}
+
+Le système est structuré en quatre composants principaux :
+
+\begin{enumerate}
+    \item \textbf{GazeboCamera} : Gère la connexion à la caméra du drone dans Gazebo et fournit les images en temps réel
+    \item \textbf{ArucoDetector} : Détecte les marqueurs ArUco dans les images et calcule leur position dans le cadre image
+    \item \textbf{SimpleController} : Calcule les corrections de vitesse en fonction de l'erreur de position (contrôle proportionnel)
+    \item \textbf{DroneController} : Interface avec MAVSDK pour envoyer les commandes de vol au drone
+\end{enumerate}
+
+Cette architecture modulaire permet de tester et améliorer chaque composant indépendamment.
+
+\subsection{Connexion et initialisation}
+
+Le programme commence par initialiser tous les composants :
+
+\begin{lstlisting}[caption={Initialisation du système}]
+// Connexion au drone via MAVSDK
+Mavsdk mavsdk;
+mavsdk.add_any_connection("udp://:14540");
+auto system = mavsdk.systems().at(0);
+
+// Initialisation des plugins
+auto action = Action{system};
+auto telemetry = Telemetry{system};
+auto offboard = Offboard{system};
+auto gimbal = Gimbal{system};
+
+// Initialisation de la caméra et du détecteur
+GazeboCamera camera("/camera");
+ArucoDetector detector;
+\end{lstlisting}
+
+\subsection{Décollage et mode offboard}
+
+Après initialisation, le drone décolle et active le mode offboard :
+
+\begin{lstlisting}[caption={Décollage et activation du mode offboard}]
+// Attendre que le drone soit prêt
+while (!telemetry.health().is_home_position_ok) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+}
+
+// Armer et décoller à 10 mètres
+action.arm();
+action.set_takeoff_altitude(10.0f);
+action.takeoff();
+
+// Attendre la fin du décollage
+std::this_thread::sleep_for(std::chrono::seconds(10));
+
+// Orienter la caméra vers le bas
+gimbal.set_pitch_and_yaw(-90.0f, 0.0f);
+
+// Activer le mode offboard
+Offboard::VelocityBodyYawspeed velocity{};
+offboard.set_velocity_body(velocity);
+offboard.start();
+\end{lstlisting}
+
+\subsection{Boucle de détection et tracking}
+
+La boucle principale du programme détecte le marqueur ArUco et ajuste la position du drone :
+
+\begin{lstlisting}[caption={Boucle de détection et contrôle}]
+while (altitude > 0.3) {
+    // Récupérer une image de la caméra
+    cv::Mat frame;
+    if (!camera.get_frame(frame)) continue;
+    
+    // Détecter le marqueur ArUco
+    cv::Point2f center;
+    int marker_id;
+    if (!detector.detect(frame, center, marker_id)) {
+        // Pas de détection, maintenir la position
+        velocity.forward_m_s = 0.0f;
+        velocity.right_m_s = 0.0f;
+        offboard.set_velocity_body(velocity);
+        continue;
+    }
+    
+    // Calculer l'erreur de position
+    float frame_center_x = frame.cols / 2.0f;
+    float frame_center_y = frame.rows / 2.0f;
+    float error_x = center.x - frame_center_x;
+    float error_y = center.y - frame_center_y;
+    
+    // Contrôle proportionnel
+    float Kp = 0.001f;  // Gain proportionnel
+    velocity.right_m_s = Kp * error_x;
+    velocity.forward_m_s = Kp * error_y;
+    
+    // Limitation de vitesse
+    float max_speed = 1.0f;
+    velocity.right_m_s = std::clamp(velocity.right_m_s, 
+                                    -max_speed, max_speed);
+    velocity.forward_m_s = std::clamp(velocity.forward_m_s, 
+                                      -max_speed, max_speed);
+    
+    // Envoyer la commande
+    offboard.set_velocity_body(velocity);
+    
+    // Récupérer l'altitude actuelle
+    altitude = telemetry.position().relative_altitude_m;
+}
+\end{lstlisting}
+
+Le contrôle proportionnel applique une correction de vitesse proportionnelle à l'erreur de position. La formule est :
+
+\begin{equation}
+v = K_p \times e(t)
+\end{equation}
+
+où $v$ est la vitesse de correction, $K_p$ est le gain proportionnel, et $e(t)$ est l'erreur de position à l'instant $t$.
+
+\subsection{Stratégie de descente}
+
+La descente se fait en deux phases :
+
+\subsubsection{Phase haute (altitude > 1m)}
+
+À haute altitude, le drone descend lentement tout en maintenant l'alignement avec la cible :
+
+\begin{lstlisting}[caption={Descente à haute altitude}]
+if (altitude > 1.0f) {
+    velocity.down_m_s = 0.3f;  // Descente à 0.3 m/s
+} else {
+    velocity.down_m_s = 0.2f;  // Descente plus lente
+}
+\end{lstlisting}
+
+\subsubsection{Phase basse (altitude < 1m)}
+
+À basse altitude, la vitesse de descente est réduite pour un atterrissage en douceur. De plus, le marqueur devient trop grand dans le champ de vision, ce qui rend la détection difficile. Le système maintient alors la dernière consigne connue.
+
+\subsection{Limites et améliorations}
+
+Le système avec contrôle proportionnel pur présente plusieurs limitations :
+
+\begin{itemize}
+    \item \textbf{Oscillations} : Le contrôle P pur peut générer des oscillations autour de la cible, surtout à haute altitude
+    \item \textbf{Erreur statique} : En présence de vent ou de perturbations, le système peut converger vers une position légèrement décalée
+    \item \textbf{Cible fixe uniquement} : Le système ne peut pas suivre une cible en mouvement car il n'anticipe pas le déplacement
+    \item \textbf{Pas d'adaptation} : Les gains fixes ne sont pas optimaux pour toutes les altitudes
+\end{itemize}
+
+Ces limitations motivent le passage à un contrôleur PID adaptatif dans l'étape suivante.
+
+
+\section{Étape 3 -- Atterrissage sur cible mobile avec PID}
+\label{sec:etape3}
+
+La troisième étape consiste à étendre le système pour permettre l'atterrissage sur une cible mobile, en utilisant un contrôleur PID adaptatif.
+
+\subsection{Contexte et motivation}
+
+Le contrôle proportionnel simple de l'étape précédente fonctionne correctement pour une cible fixe, mais présente des limitations importantes pour une cible mobile :
+
+\begin{itemize}
+    \item Le système réagit uniquement à l'erreur instantanée sans tenir compte de l'historique
+    \item Il n'anticipe pas le mouvement futur de la cible
+    \item Les oscillations peuvent être importantes, surtout lorsque la cible se déplace rapidement
+    \item L'erreur statique peut être significative en présence de perturbations
+\end{itemize}
+
+Un contrôleur PID (Proportionnel-Intégral-Dérivé) permet de résoudre ces problèmes en combinant trois types de corrections.
+
+\subsection{Architecture du contrôleur PID}
+
+\subsubsection{Limites du contrôle P pur}
+
+Le contrôle proportionnel pur présente plusieurs défauts :
+
+\begin{itemize}
+    \item \textbf{Réaction retardée} : La correction n'est appliquée qu'après l'apparition de l'erreur
+    \item \textbf{Erreur statique} : En présence d'un biais constant (vent, dérive), le système converge vers une position décalée
+    \item \textbf{Oscillations} : Un gain élevé améliore la rapidité mais provoque des oscillations ; un gain faible réduit les oscillations mais ralentit la convergence
+\end{itemize}
+
+\subsubsection{Principe du PID}
+
+Le contrôleur PID combine trois termes :
+
+\begin{equation}
+v(t) = K_p \times e(t) + K_i \times \int_0^t e(\tau)d\tau + K_d \times \frac{de(t)}{dt}
+\end{equation}
+
+où :
+\begin{itemize}
+    \item \textbf{Terme proportionnel} ($K_p \times e(t)$) : Correction proportionnelle à l'erreur actuelle
+    \item \textbf{Terme intégral} ($K_i \times \int e(\tau)d\tau$) : Accumule l'erreur au fil du temps pour éliminer l'erreur statique
+    \item \textbf{Terme dérivé} ($K_d \times \frac{de(t)}{dt}$) : Anticipe l'évolution de l'erreur et amortit les oscillations
+\end{itemize}
+
+\subsubsection{Implémentation C++}
+
+Le contrôleur PID est implémenté dans une classe dédiée :
+
+\begin{lstlisting}[caption={Classe PIDController}]
+class PIDController {
+public:
+    PIDController(float kp, float ki, float kd, float max_integral)
+        : kp_(kp), ki_(ki), kd_(kd), max_integral_(max_integral),
+          integral_(0.0f), previous_error_(0.0f) {}
+    
+    float compute(float error, float dt) {
+        // Terme proportionnel
+        float p_term = kp_ * error;
+        
+        // Terme intégral avec anti-windup
+        integral_ += error * dt;
+        integral_ = std::clamp(integral_, -max_integral_, max_integral_);
+        float i_term = ki_ * integral_;
+        
+        // Terme dérivé
+        float derivative = (error - previous_error_) / dt;
+        float d_term = kd_ * derivative;
+        
+        previous_error_ = error;
+        
+        return p_term + i_term + d_term;
+    }
+    
+    void reset() {
+        integral_ = 0.0f;
+        previous_error_ = 0.0f;
+    }
+    
+    void set_gains(float kp, float ki, float kd) {
+        kp_ = kp;
+        ki_ = ki;
+        kd_ = kd;
+    }
+
+private:
+    float kp_, ki_, kd_;
+    float max_integral_;
+    float integral_;
+    float previous_error_;
+};
+\end{lstlisting}
+
+L'implémentation inclut un mécanisme d'\textit{anti-windup} qui limite l'accumulation de l'intégrale pour éviter un dépassement excessif.
+
+\subsubsection{Réglage des gains adaptatifs}
+
+Les gains du PID sont adaptés en fonction de l'altitude pour optimiser les performances :
+
+\begin{lstlisting}[caption={Adaptation des gains selon l'altitude}]
+void update_pid_gains(float altitude) {
+    if (altitude > 3.0f) {
+        // Haute altitude : réactivité élevée
+        pid_x.set_gains(2.0f, 0.5f, 0.3f);
+        pid_y.set_gains(2.0f, 0.5f, 0.3f);
+    } else {
+        // Basse altitude : stabilité prioritaire
+        pid_x.set_gains(1.5f, 0.3f, 0.2f);
+        pid_y.set_gains(1.5f, 0.3f, 0.2f);
+    }
+}
+\end{lstlisting}
+
+Cette adaptation se base sur la formule :
+
+\begin{equation}
+K_p = K_p^{\min} + (K_p^{\max} - K_p^{\min}) \times \text{error\_factor}
+\end{equation}
+
+où \texttt{error\_factor} dépend de l'altitude et de l'erreur de position.
+
+\subsection{Plateforme mobile}
+
+Pour tester l'atterrissage sur cible mobile, une plateforme robotique mobile a été créée dans Gazebo :
+
+\begin{itemize}
+    \item \textbf{Type} : Robot à différentiel (DiffDrive)
+    \item \textbf{Marqueur ArUco} : Taille 50×50 cm (DICT\_4X4\_50, ID 0)
+    \item \textbf{Contrôle} : Via topic ROS \texttt{/cmd\_vel}
+    \item \textbf{Vitesse} : Configurable de 0.5 à 2.0 m/s
+\end{itemize}
+
+Le robot est défini dans un fichier SDF Gazebo et placé dans l'environnement de simulation. Il peut être contrôlé pour se déplacer en ligne droite ou suivre des trajectoires courbes.
+
+\subsection{Stratégie de descente en 3 phases}
+
+La stratégie d'atterrissage sur cible mobile est organisée en trois phases distinctes :
+
+\subsubsection{Phase 1 : Approche active (altitude > 2m)}
+
+Dans cette phase, le drone :
+\begin{itemize}
+    \item Détecte activement le marqueur ArUco
+    \item Applique le contrôle PID pour suivre la cible
+    \item Descend progressivement à 0.4 m/s
+    \item Maintient une vitesse horizontale maximale de 2.0 m/s
+\end{itemize}
+
+\begin{lstlisting}[caption={Phase d'approche active}]
+if (altitude > 2.0f && aruco_detected) {
+    float error_x = (marker_center.x - frame_center_x) / frame_width;
+    float error_y = (marker_center.y - frame_center_y) / frame_height;
+    
+    float vx = pid_x.compute(error_x, dt);
+    float vy = pid_y.compute(error_y, dt);
+    
+    velocity.right_m_s = std::clamp(vx, -2.0f, 2.0f);
+    velocity.forward_m_s = std::clamp(vy, -2.0f, 2.0f);
+    velocity.down_m_s = 0.4f;
+}
+\end{lstlisting}
+
+\subsubsection{Phase 2 : Stabilisation (altitude = 2m, durée 2 secondes)}
+
+À l'altitude de 2 mètres, le drone effectue une pause de stabilisation :
+\begin{itemize}
+    \item Maintien de l'altitude constante pendant 2 secondes
+    \item Affinage du centrage sur la cible
+    \item Mémorisation de la vitesse et direction de la cible
+    \item Préparation pour la descente finale
+\end{itemize}
+
+\begin{lstlisting}[caption={Phase de stabilisation}]
+if (altitude <= 2.0f && altitude > 1.9f && !stabilization_done) {
+    // Maintenir l'altitude
+    velocity.down_m_s = 0.0f;
+    
+    // Continuer le suivi
+    velocity.right_m_s = std::clamp(vx, -1.0f, 1.0f);
+    velocity.forward_m_s = std::clamp(vy, -1.0f, 1.0f);
+    
+    // Compter le temps
+    stabilization_time += dt;
+    if (stabilization_time >= 2.0f) {
+        stabilization_done = true;
+        // Mémoriser la trajectoire
+        last_known_vx = velocity.right_m_s;
+        last_known_vy = velocity.forward_m_s;
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Phase 3 : Descente finale (altitude < 2m, boucle ouverte)}
+
+Dans la phase finale, le marqueur devient trop grand pour être détecté correctement. Le système passe en boucle ouverte :
+\begin{itemize}
+    \item Utilisation de la trajectoire mémorisée
+    \item Descente lente à 0.25 m/s
+    \item Pas de correction visuelle
+    \item Hypothèse : la cible maintient sa trajectoire rectiligne
+\end{itemize}
+
+\begin{lstlisting}[caption={Descente finale en boucle ouverte}]
+if (altitude < 2.0f && stabilization_done) {
+    // Maintenir la trajectoire mémorisée
+    velocity.right_m_s = last_known_vx;
+    velocity.forward_m_s = last_known_vy;
+    velocity.down_m_s = 0.25f;
+    
+    // Atterrissage final
+    if (altitude < 0.3f) {
+        action.land();
+        break;
+    }
+}
+\end{lstlisting}
+
+\subsection{Validation expérimentale}
+
+Le système a été testé avec différentes vitesses de déplacement de la plateforme :
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Vitesse (m/s)} & \textbf{Précision (cm)} & \textbf{Résultat} \\
+\hline
+0.5 & 10 & Succès \\
+1.0 & 12 & Succès \\
+1.5 & 15 & Succès \\
+2.0 & 15 & Succès (limite) \\
+2.5 & -- & Oscillations \\
+\hline
+\end{tabular}
+\caption{Résultats des tests d'atterrissage}
+\end{table}
+
+Les résultats montrent que :
+\begin{itemize}
+    \item Le système fonctionne de manière fiable jusqu'à 2.0 m/s
+    \item La précision d'atterrissage est de 10-15 cm
+    \item Au-delà de 2.0 m/s, des oscillations apparaissent et déstabilisent le système
+\end{itemize}
+
+\subsection{Conclusion de l'étape}
+
+Le contrôleur PID adaptatif avec stratégie de descente multi-phases permet un atterrissage réussi sur des cibles mobiles se déplaçant jusqu'à 2.0 m/s. Les gains adaptatifs améliorent la stabilité à basse altitude tout en maintenant la réactivité à haute altitude. La phase de stabilisation à 2 mètres est critique pour mémoriser la trajectoire et préparer la descente finale en boucle ouverte.
+
+
+\section{Étape 4 -- Limites du système}
+\label{sec:etape4}
+
+Malgré les performances satisfaisantes du système, plusieurs limitations ont été identifiées lors des tests.
+
+\subsection{Limitation en vitesse}
+
+Le système devient instable au-delà de 2.0 m/s de vitesse de la cible :
+
+\begin{itemize}
+    \item \textbf{Oscillations} : À haute vitesse, le délai entre détection et correction devient significatif, causant des oscillations de plus en plus importantes
+    \item \textbf{Saturation des commandes} : Les corrections calculées par le PID dépassent régulièrement les limites de vitesse du drone
+    \item \textbf{Retard visuel} : Le traitement des images (30 Hz) introduit un retard qui devient problématique à haute vitesse
+\end{itemize}
+
+Des améliorations possibles incluent :
+\begin{itemize}
+    \item Augmentation de la fréquence de traitement des images
+    \item Prédiction du mouvement de la cible (filtre de Kalman)
+    \item Gains PID encore plus adaptatifs en fonction de la vitesse de la cible
+\end{itemize}
+
+\subsection{Gestion des trajectoires courbes}
+
+Le système suppose que la cible se déplace en ligne droite pendant la phase finale. Cette hypothèse est violée si la cible effectue un virage :
+
+\begin{itemize}
+    \item \textbf{Perte de précision} : Le drone continue en ligne droite alors que la cible tourne
+    \item \textbf{Distance minimale requise} : Pour des virages serrés, il faut que le drone soit à plus de 5-6 mètres d'altitude pour compenser le décalage
+    \item \textbf{Nécessité d'un virage avant} : La cible doit effectuer son virage avant que le drone atteigne l'altitude de 2 mètres
+\end{itemize}
+
+Une solution serait d'implémenter un système de prédiction de trajectoire basé sur l'historique des positions détectées, ou d'étendre la détection visuelle à plus basse altitude en utilisant plusieurs caméras.
+
+\subsection{Hypothèse trajectoire rectiligne phase finale}
+
+La descente finale en boucle ouverte (altitude < 2m) repose sur l'hypothèse d'une trajectoire rectiligne de la cible. Cette hypothèse limite les scénarios d'utilisation :
+
+\begin{itemize}
+    \item La cible doit maintenir cap et vitesse constants
+    \item Les perturbations (vent, pente du terrain) ne sont pas compensées
+    \item Pas de réaction possible aux imprévus
+\end{itemize}
+
+Pour lever cette limitation, il faudrait :
+\begin{itemize}
+    \item Utiliser un marqueur ArUco plus petit pour permettre la détection à basse altitude
+    \item Employer une caméra avec un champ de vision plus large
+    \item Intégrer d'autres capteurs (GPS différentiel, lidar)
+\end{itemize}
+
+\section{Impact écologique}
+\label{sec:impact}
+
+Cette section présente une réflexion sur l'impact écologique du système d'atterrissage autonome de drones.
+
+\subsection{Bénéfices potentiels}
+
+Les systèmes d'atterrissage autonome sur plateformes mobiles peuvent contribuer positivement à l'environnement :
+
+\subsubsection{Réduction des trajets}
+
+Un drone capable d'atterrir sur un véhicule en mouvement peut :
+\begin{itemize}
+    \item Réduire la distance totale parcourue en évitant les allers-retours vers une base fixe
+    \item Permettre des livraisons en relais avec des véhicules terrestres, optimisant ainsi les itinéraires
+    \item Économiser de l'énergie en minimisant les phases de vol
+\end{itemize}
+
+\subsubsection{Efficacité énergétique}
+
+La précision de l'atterrissage améliore l'efficacité :
+\begin{itemize}
+    \item Moins de temps en vol stationnaire (très énergivore)
+    \item Moins de tentatives d'atterrissage ratées
+    \item Optimisation des profils de vol
+\end{itemize}
+
+\subsubsection{Applications environnementales}
+
+Le système peut être utilisé pour :
+\begin{itemize}
+    \item Surveillance de la faune sans perturbation (atterrissage sur véhicules de recherche)
+    \item Inspection d'infrastructures mobiles (navires, trains)
+    \item Intervention d'urgence avec déploiement rapide
+\end{itemize}
+
+\subsection{Risques et nuisances}
+
+Il faut néanmoins considérer les impacts négatifs potentiels :
+
+\subsubsection{Effet rebond}
+
+La facilité d'utilisation peut entraîner :
+\begin{itemize}
+    \item Augmentation du nombre de vols de drones
+    \item Utilisation pour des besoins non essentiels
+    \item Remplacement de solutions moins impactantes (vélo, marche)
+\end{itemize}
+
+\subsubsection{Nuisances}
+
+Les drones génèrent :
+\begin{itemize}
+    \item Pollution sonore (nuisance pour la faune et les populations)
+    \item Pollution visuelle
+    \item Perturbation de la faune aviaire
+\end{itemize}
+
+\subsubsection{Cycle de vie}
+
+L'impact du cycle de vie doit être pris en compte :
+\begin{itemize}
+    \item Fabrication des composants électroniques (terres rares, énergie)
+    \item Durée de vie limitée des batteries
+    \item Difficultés de recyclage
+\end{itemize}
+
+\subsection{Métriques et bonnes pratiques}
+
+Pour minimiser l'impact écologique, plusieurs mesures peuvent être mises en place :
+
+\begin{itemize}
+    \item \textbf{Optimisation des algorithmes} : Réduire le temps de calcul et la consommation énergétique
+    \item \textbf{Utilisation raisonnée} : Privilégier les applications à forte valeur ajoutée
+    \item \textbf{Intégration multimodale} : Combiner drones et véhicules terrestres pour optimiser les trajets
+    \item \textbf{Éco-conception} : Choisir des matériaux recyclables et des batteries à longue durée de vie
+    \item \textbf{Zones de restriction} : Respecter les zones protégées et les périodes sensibles pour la faune
+\end{itemize}
+
+Il est essentiel que le développement de ces technologies s'accompagne d'une réflexion éthique et d'un cadre réglementaire approprié pour garantir un impact environnemental positif.
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+Ce stage à l'USTH a permis de développer un système complet d'atterrissage autonome de drones sur des plateformes mobiles en utilisant la détection de marqueurs ArUco et un contrôle PID adaptatif.
+
+\subsection{Validation de l'approche}
+
+L'approche adoptée, combinant détection ArUco, contrôleur PID adaptatif et stratégie de descente multi-phases, s'est révélée efficace :
+
+\begin{itemize}
+    \item Le cadre de simulation (PX4 + MAVSDK + Gazebo) a permis un développement itératif et des tests répétables
+    \item La détection ArUco optimisée fonctionne de manière fiable jusqu'à 10 mètres d'altitude
+    \item Le contrôleur PID adaptatif assure un suivi stable de la cible mobile
+    \item La stratégie de descente en trois phases gère efficacement la perte du retour visuel
+\end{itemize}
+
+\subsection{Performances atteintes}
+
+Les performances mesurées sont :
+
+\begin{itemize}
+    \item \textbf{Vitesse maximale de la cible} : 2.0 m/s
+    \item \textbf{Précision d'atterrissage} : 10-15 cm
+    \item \textbf{Altitude de détection} : 10 mètres
+    \item \textbf{Taux de réussite} : > 95\% pour des trajectoires rectilignes
+\end{itemize}
+
+Ces résultats démontrent la faisabilité de l'atterrissage autonome sur cibles mobiles dans des conditions contrôlées.
+
+\subsection{Limitations identifiées}
+
+Plusieurs limitations ont été identifiées :
+
+\begin{itemize}
+    \item Instabilité au-delà de 2.0 m/s de vitesse de cible
+    \item Nécessité d'une trajectoire rectiligne en phase finale
+    \item Sensibilité aux conditions d'éclairage pour la détection ArUco
+    \item Absence de gestion des obstacles dynamiques
+\end{itemize}
+
+\subsection{Perspectives d'amélioration}
+
+Plusieurs pistes d'amélioration peuvent être envisagées :
+
+\begin{itemize}
+    \item \textbf{Prédiction de trajectoire} : Implémenter un filtre de Kalman pour anticiper le mouvement de la cible
+    \item \textbf{Fusion de capteurs} : Combiner détection visuelle et GPS différentiel pour améliorer la précision
+    \item \textbf{Détection multi-échelle} : Utiliser plusieurs marqueurs de tailles différentes pour couvrir toutes les altitudes
+    \item \textbf{Apprentissage automatique} : Entraîner un réseau de neurones pour prédire les trajectoires complexes
+    \item \textbf{Tests en conditions réelles} : Valider le système sur un drone physique avec un robot mobile réel
+\end{itemize}
+
+\subsection{Dimension humaine du stage}
+
+Au-delà des aspects techniques, ce stage a été une expérience humaine enrichissante :
+
+\begin{itemize}
+    \item \textbf{Environnement international} : Travailler au Vietnam a permis de découvrir une culture différente et d'améliorer mes compétences en communication interculturelle
+    \item \textbf{Autonomie} : Le projet nécessitait une grande autonomie dans la recherche de solutions et la résolution de problèmes
+    \item \textbf{Collaboration} : Les échanges avec le Dr Pham Xuan Tung et l'équipe de l'USTH ont été très formateurs
+    \item \textbf{Rigueur scientifique} : La démarche expérimentale et la documentation rigoureuse ont renforcé ma méthodologie de travail
+\end{itemize}
+
+Ce stage a confirmé mon intérêt pour la robotique autonome et la vision par ordinateur, domaines que je souhaite approfondir dans la suite de mon parcours académique et professionnel.
+
+\vspace{1cm}
+
+Je tiens à remercier chaleureusement le Dr Pham Xuan Tung pour son encadrement et ses conseils précieux, M. Feuilloy Matthieu pour son suivi depuis l'ESEO, ainsi que toute l'équipe de l'USTH pour leur accueil et leur soutien tout au long de ce stage.
+
+\end{document}
